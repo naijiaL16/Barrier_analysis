@@ -1,0 +1,894 @@
+---
+title: "Common barriers to Covid-19 Vaccination"
+author: Naijia Liu
+date: 2021-04-23
+tags:
+  - COVIDcast
+  - symptom surveys
+  - vaccine
+authors:
+  - alex
+  - robin
+  - naijia
+heroImage: 
+heroImageThumb: 
+related:
+  - 
+summary: |
+  Common barriers to vaccination by vaccination status and 
+  different age groups.
+acknowledgements: |
+
+output:
+  html_document:
+    code_folding: hide
+  blogdown::html_page:
+    toc: true
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+## This post's filename starts with _ so it is not run by blogdown during the
+## post build process, since it depends on private microdata. Instead, we commit
+## the HTML.
+library(knitr)
+library(ComplexUpset)
+library(qdapTools)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(kableExtra)
+library(gt)
+library(xts)
+library(directlabels)
+library(ggrepel)
+library(data.table)
+library(readr)
+library(scales)
+
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+## data we will be using for the post
+
+# load the data we need for Wave 11 in May
+survey5_full <- fread("/Users/bb/Box/CTIS\ data/2021-05-race-ethnicity.csv.gz")
+
+
+# remove barrier 11 "None of the above"
+survey5 <- fread("/Users/bb/Box/CTIS\ data/2021-05-race-ethnicity.csv.gz") %>% 
+  filter(is.na(V15a) | V15a != "11",
+         is.na(V15b) | V15b != "11")
+
+survey5$barriers_logic <- split_options(coalesce(survey5$V15a, survey5$V15b))
+
+
+# load the data we need for trend plot
+# read in the data
+survey_month <- fread("/Users/bb/Box/CTIS\ data/monthly_nation_age.csv.gz")
+
+
+# load the data we need for Wave 12 in Jan,2022
+survey1_full <- fread("/Users/bb/Box/CTIS\ data/2022-01-race-ethnicity.csv.gz")
+
+# new barriers were introduced in Wave 12 in Jan,2022
+survey1 <- fread("/Users/bb/Box/CTIS\ data/2022-01-race-ethnicity.csv.gz") %>% 
+  filter(is.na(V15c) | V15c != "11",
+         is.na(V15b) | V15b != "11")
+
+survey1$barriers_logic <- split_options(coalesce(as.character(survey1$V15c), survey1$V15b))
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# load the fuctions we need
+split_options <- function(column) {
+  return(strsplit(column, ",", fixed = TRUE))
+}
+
+is_selected <- function(vec, selection) {
+  selections <- unlist(lapply(
+    vec,
+    function(resp) {
+      if (length(resp) == 0 || all(is.na(resp))) {
+        # Qualtrics files code no selection as "" (empty string), which is
+        # parsed by `read_csv` as `NA` (missing) by default. Since all our
+        # selection items include "None of the above" or similar, treat both no
+        # selection ("") or missing (NA) as missing, for generality.
+        NA
+      } else {
+        selection %in% resp
+      }
+    }))
+  return(selections)
+}
+
+code_demographics <- function(d) {
+  d$race_ethnicity <- case_when(
+    d$D6 == 1 ~ "Hispanic",
+    d$D7 == 3 ~ "Black",
+    d$D7 == 5 ~ "White",
+    is.na(d$D7) | is.na(d$D7) ~ NA_character_,
+    TRUE ~ "Other"
+  )}
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Now let's code barriers for May,2021
+barriers <- list(
+  "1" = "Eligibility requirements",
+  "2" = "No vaccines or appointments",
+  "3" = "Times didn't work",
+  "4" = "Technical difficulties",
+  "5" = "Document requirements",
+  "6" = "Limited Internet/phone access",
+  "7" = "Can't travel to vaccine site",
+  "8" = "Language barrier",
+  "9" = "Childcare",
+  "10" = "Can't get time off",
+  "12" = "Desired brand not available",
+  "13" = "Have not tried yet"
+)
+
+survey5$barriers <- lapply(
+  survey5$barriers_logic,
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(barriers[s])
+    }
+  }
+)
+
+# extract barrier string from barriers column
+survey5$barriers_str <- sapply(
+  survey5$barriers,
+  function(ss) {
+    paste0(ss, collapse = "&")
+  }
+)
+
+# add column for vaccination status
+survey5$vaccinated <- case_when(
+  survey5$V1 == 1 ~ "Vaccinated",
+  survey5$V1 == 2 ~ "Not vaccinated"
+)
+
+
+# regroup the age into 3 main groups
+# "18-34 years", "35-64 years", "65 years or older"
+age_logic <- list(
+  "1" = "18-24 years",
+  "2" = "25-44 years",
+  "3" = "25-44 years",
+  "4" = "45-64 years",
+  "5" = "45-64 years",
+  "6" = "65 years or older",
+  "7" = "65 years or older")
+
+
+## extract the subset for May v15a values
+# one hot coding for the May v15a values
+v15a_input <- mtabulate(survey5$barriers[which(survey5$V1 == 1)])
+
+# add "age" column to the v15a data frame 
+v15a_input$age <- lapply(
+  as.character(survey5$D2[which(survey5$V1 == 1)]), # for those who are vaccinated
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(age_logic[s])
+    }
+  }
+)
+
+v15a_input$age <- as.character(v15a_input$age)
+
+#remove the "NA" rows for vaccinated
+v15a_input <- v15a_input[-which(is.na((survey5$barriers[which(survey5$V1 == 1)]))),]
+
+
+
+## extract the subset for May v15b values
+# one hot coding for the v15b values
+v15b_input <- mtabulate(survey5$barriers[which(survey5$V1 == 2)])
+
+# add "age" column to the v15b data frame 
+v15b_input$age <- lapply(
+  as.character(survey5$D2[which(survey5$V1 == 2)]),
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(age_logic[s])
+    }
+  }
+)
+
+v15b_input$age <- as.character(v15b_input$age)
+
+#remove the "NA" rows (the highest pike in the plot) for not vaccinated
+v15b_input <- v15b_input[-which(is.na((survey5$barriers[which(survey5$V1 == 2)]))),]
+```
+
+```{r}
+## trend plot for all the vaccinated
+# exclude "none" barrier
+month_barrier_vaccinated <- data.frame(as.numeric(survey_month$period_val),
+                      survey_month$age,
+                      survey_month$val_pct_vaccine_barrier_eligible_has,
+                      survey_month$val_pct_vaccine_barrier_no_appointments_has,
+                      survey_month$val_pct_vaccine_barrier_appointment_time_has,
+                      survey_month$val_pct_vaccine_barrier_technical_difficulties_has,
+                      survey_month$val_pct_vaccine_barrier_document_has,
+                      survey_month$val_pct_vaccine_barrier_technology_access_has,
+                      survey_month$val_pct_vaccine_barrier_travel_has,
+                      survey_month$val_pct_vaccine_barrier_language_has,
+                      survey_month$val_pct_vaccine_barrier_childcare_has,
+                      survey_month$val_pct_vaccine_barrier_time_has,
+                      survey_month$val_pct_vaccine_barrier_type_has)
+
+# only take the data from May,2021 to Jan,2021
+month_barrier_vaccinated <- month_barrier_vaccinated[21:70,]
+
+colnames(month_barrier_vaccinated) <- c("period_val","age","eligible","no_appointment",
+                             "appointment_time","technical_difficultie",
+                             "document","technology_access","travel","language",
+                             "childcare","time","type")
+
+# convert period into "year/month" format
+date <- paste("2021", month_barrier_vaccinated$period_val[1:40], sep = "")
+date <- append(date,paste("2022", month_barrier_vaccinated$period_val[41:50], sep = ""))
+
+month_barrier_vaccinated$period_val <- as.yearmon(date,"%Y%m")
+
+# aggregate the age groups for all vaccinated
+month_barrier_vaccinated_all <- month_barrier_vaccinated %>% group_by(period_val) %>%
+  summarise(eligible_all = sum(eligible),
+            no_appointment_all = sum(no_appointment),
+            appointment_time_all = sum(appointment_time),
+            technical_difficultie_all = sum(technical_difficultie),
+            document_all = sum(document),
+            technology_access_all = sum(technology_access),
+            travel_all = sum(travel),
+            language_all = sum(language),
+            childcare_all = sum(childcare),
+            time_all = sum(time),
+            type_all = sum(type))
+
+colnames(month_barrier_vaccinated_all) <- colnames(month_barrier_vaccinated)[c(1,3:15)]
+
+# convert the data frame into pivot long table
+month_barrier_vaccinated_all_long <- month_barrier_vaccinated_all %>%
+  pivot_longer(cols = eligible:type,
+               names_to = "barriers",
+               values_to = "percentage")
+
+# Now let's code barriers
+barriers_name <- list(
+  "eligible" = "Eligibility requirements",
+  "no_appointment" = "No vaccines or appointments",
+  "appointment_time" = "Times didn't work",
+  "technical_difficultie" = "Technical difficulties",
+  "document" = "Document requirements",
+  "technology_access" = "Limited Internet/phone access",
+  "travel" = "Can't travel to vaccine site",
+  "language" = "Language barrier",
+  "childcare" = "Childcare",
+  "time" = "Can't get time off",
+  "type" = "Desired brand not available"
+)
+
+month_barrier_vaccinated_all_long$barriers <- lapply(
+  month_barrier_vaccinated_all_long$barriers,
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(barriers_name[s])
+    }
+  }
+)
+
+# barriers column is a named list
+# convert it into a list
+barriers_new <- c()
+for (i in 1:length(month_barrier_vaccinated_all_long$barriers)){
+  barriers_new <- c(barriers_new,
+                    (toString(unname(month_barrier_vaccinated_all_long$barriers)[i])))
+}
+
+month_barrier_vaccinated_all_long$barriers <- barriers_new
+```
+
+
+```{r}
+## trend plot for the vaccinated by different age groups
+# convert the data frame into pivot long table
+month_barrier_vaccinated_long <- month_barrier_vaccinated %>%
+  pivot_longer(cols = eligible:type,
+               names_to = "barriers",
+               values_to = "percentage")
+
+month_barrier_vaccinated_long$barriers <- lapply(
+  month_barrier_vaccinated_long$barriers,
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(barriers_name[s])
+    }
+  }
+)
+
+# barriers column is a named list
+# convert it into a list
+barriers_new <- c()
+for (i in 1:length(month_barrier_vaccinated_long$barriers)){
+  barriers_new <- c(barriers_new,
+                    (toString(unname(month_barrier_vaccinated_long$barriers)[i])))
+}
+
+month_barrier_vaccinated_long$barriers <- barriers_new
+```
+
+
+```{r}
+## prepare data for the unvaccinated table for Jan,2022
+barriers_jan <- list(
+  "1" = "Eligibility requirements",
+  "2" = "No vaccines or appointments",
+  "3" = "Times didn't work",
+  "4" = "Technical difficulties",
+  "5" = "Document requirements",
+  "6" = "Limited Internet/phone access",
+  "7" = "Can't travel to vaccine site",
+  "8" = "Language barrier",
+  "9" = "Childcare",
+  "10" = "Can't get time off",
+  "12" = "Desired brand not available",
+  "13" = "Have not tried yet",
+  "14" = "Available locations did't work",
+  "15" = "Other"
+)
+
+# data wangling for barriers
+survey1$barriers <- lapply(
+  survey1$barriers_logic,
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(barriers_jan[s])
+    }
+  }
+)
+
+# extract barrier string from barriers column
+survey1$barriers_str <- sapply(
+  survey1$barriers,
+  function(ss) {
+    paste0(ss, collapse = "&")
+  }
+)
+
+# add column for vaccination status
+survey1$vaccinated <- case_when(
+  survey1$V1 == 1 ~ "Vaccinated",
+  survey1$V1 == 2 ~ "Not vaccinated"
+)
+
+# add "age" column to the data frame 
+survey1$age <- lapply(
+  survey1$D2,
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(age_logic[s])
+    }
+  }
+)
+
+# extract the subset for Jan 2022 v15b values
+# one hot coding for the Jan 2022 v15b values
+jan_v15b_input <- survey1 %>% filter(V1==2 & !is.na(V15b) & V15b!=11) %>%
+  select(barriers,age)
+
+```
+
+
+On May 10th, 2021,the Centers for Disease Control and Prevention (CDC) and 
+the Food and Drug Administration
+[expanded the emergency use authorization (EUA) for the Pfizer-BioNTech COVID-19 Vaccine](https://www.fda.gov/news-events/press-announcements/coronavirus-covid-19-update-fda-authorizes-pfizer-biontech-covid-19-vaccine-emergency-use) to include adolescents 12 through 15 
+years of age, amending the EUA originally issued on Dec. 11, 2020 for 
+administration in individuals 16 years of age and older. This declared the 
+universal acceptance for vaccination, and another significant step to return to 
+normality.
+
+By understanding and assisting overcome the barriers to vaccination, one of the 
+major goals for Delphi group has always been helping raise the vaccination rate 
+and resume the normal life. And that’s why, through its COVID-19 Trends and 
+Impact Survey, the Delphi Group started to track COVID vaccination barriers 
+right after FDA’s announcement, to help understand the vaccination barriers by 
+vaccination status and age groups. Delphi’s COVID-19 Trends and Impact Survey
+is a massive survey distributed daily across the United States through our 
+partnership with Facebook, and with the help of it, we’ve successfully tracked `r blogdown::shortcode_html("reflink", "2021-01-22-holiday-surveys", "social distancing")` 
+and `r blogdown::shortcode_html("reflink", "2020-12-10-masks-public", "mask use")`,
+and gave some thoroughly insights of `r blogdown::shortcode_html("reflink", "2021-04-20-jj-vaccine", "vaccine hesitancy")`.
+
+Since May 20th, 2021, we have asked all respondents about whether they have 
+experienced specific barriers to getting the COVID-19 vaccine based on
+their vaccination status. Combined with their answers on age groups, we can have
+a general idea of the common barriers to vaccination by vaccination status and 
+age groups, and make monthly comparison from May 2022 to now.
+
+From our finding, based on the different vaccination status and age groups, our 
+survey respondents have encountered different barriers to vaccination. Though, 
+our data does suggest that extra efforts should be taken to ensure enough 
+availability to vaccination for potential vaccine recipients.
+
+Not surprisingly, CDC has already suggested multiple approaches that can 
+[help increase COVID-19 Vaccination](https://www.cdc.gov/vaccines/covid-19/health-departments/generate-vaccinations.html#:~:text=Partner%20with%20local%20community%20groups,or%20request%20at%2Dhome%20vaccinations),
+including reaching people where they live, work, learn, pray, play, gather or 
+through existing programs and the internet. For example, CDC mentions providing 
+at-home vaccination for those have difficulty accessing a vaccination, like older
+adults, is a great way to increase vaccine rate for priority populations. 
+Besides, by offering options including allowing employees to be away during work
+hours or to taking paid leave to get vaccinated, reimbursing employees for 
+transportation costs, and offering on-site vaccination, employers can help 
+employees get vaccinated. We hope, through this article, we can give more 
+insightful suggestions on how we could make vaccines more available to more 
+potential recipient by different age groups.
+
+
+Let’s start with the common barriers to vaccination on May, 2021 by vaccination 
+status. First, we ask respondents whether they have been vaccinated or not, and
+according to their vaccination status, they will be given a list of 12 or 13 
+specific barriers. Respondents can select multiple reasons, so the numbers do 
+not add to 100%. One thing we also need to notice is the huge sample size 
+disparity between the vaccinated and the unvaccinated, which could possibly 
+affect the accuracy of the measurement for all respondents.
+
+
+```{r}
+# percentage table for different barriers by vaccination status on May,2021
+
+## sample size without removing "none of above" (barrier 11)
+# sample size for the vaccinated May
+samplesize_v5 <- survey5_full %>% filter(V1==1 & !is.na(V15a)) %>% nrow
+# sample size for the unvaccinated May
+samplesize_unv5 <- survey5_full %>% filter(V1==2 & !is.na(V15b)) %>% nrow
+# sample size for all May
+samplesize_all5 <- samplesize_v5+samplesize_unv5
+
+## sample size removing "none of above" (barrier 11)
+## to match with the trend plot
+# sample size for the vaccinated May
+samplesize_v5_use <- survey5_full %>% filter(V1==1 & !is.na(V15a) & V15a!=11) %>% nrow
+# sample size for the unvaccinated May
+samplesize_unv5_use <- survey5_full %>% filter(V1==2 & !is.na(V15b) & V15b!=11) %>% nrow
+# sample size for all May
+samplesize_all5_use <- samplesize_v5_use+samplesize_unv5_use
+
+# percentage for barriers who have vaccinated
+freq_vaccinated <- table(unlist(survey5$barriers[which(survey5$V1 == 1)]))
+prop_vaccinated <- as.data.frame(freq_vaccinated/samplesize_v5_use)
+
+vac <- as.double(pull(prop_vaccinated, Freq))
+vac <- c(vac[1:6],0,vac[7:11]) # no barrier "have not tried yet" for the vaccinated
+
+# percentage for barriers who have not vaccinated
+freq_not_vaccinated <- table(unlist(survey5$barriers[which(survey5$V1 == 2)]))
+prop_not_vaccinated <- as.data.frame(freq_not_vaccinated/samplesize_unv5_use)
+
+nvac <- pull(prop_not_vaccinated, Freq)
+
+# percentage for barriers for all
+freq <- table(unlist(survey5$barriers))
+prop <- as.data.frame(freq/(samplesize_v5_use+samplesize_unv5_use))
+
+table <- mutate(prop, vac, nvac)
+table <- table[with(table,order(Freq,decreasing = TRUE)),]
+
+# order the table by frequency of barriers of all vaccinated in descending order
+table <- table[with(table,order(Freq,decreasing = TRUE)),]
+table[,2:4] <- apply(table[,2:4], 2, function(x) percent(x, accuracy=0.01))
+
+colnames(table) <- c("Barriers","All", "Vaccinated","Unvaccinated")
+
+# transform the barriers abbreviation into long ones
+barrier_explain <- list(
+  "Eligibility requirements"="I did not meet the eligibility requirements",
+  "No vaccines or appointments"="There were no vaccines or vaccine appointments available",
+  "Times didn't work"="The available appointment times did not work for me",
+  "Technical difficulties"="There were technical difficulties with the website or phone line",
+  "Document requirements"="I was unable to provide a required document",
+  "Limited Internet/phone access"="Limited access to internet or phone to schedule an appointment",
+  "Can't travel to vaccine site"="Difficulty traveling to a vaccination site",
+  "Language barrier"="Information not available in my native language",
+  "Childcare"="There is no one to provide childcare while getting the vaccine",
+  "Can't get time off"="It was difficult to get time away from work or school",
+  "Desired brand not available"="I could not get the type of vaccine I wanted",
+  "Have not tried yet"="I have not tried to get the vaccine",
+  "Available locations did't work"="The available appointment locations did not work for me",
+  "Other"="Other")
+
+table$Barriers <- lapply(table$Barriers, function(s) unlist(barrier_explain[s]))
+
+```
+
+
+```{r}
+# comparison table on May, 2021 by vaccination status
+gt(table) %>%
+  cols_align(
+    align = "left",
+    columns = Barriers
+  ) %>%
+    cols_align(
+    align = "right",
+    columns = c(All, Vaccinated, Unvaccinated)
+  ) %>%
+  tab_header(
+    title = md("**Common barriers to vaccination**"),
+    subtitle = md("*May, 2021*")
+  ) %>%
+    tab_footnote(paste0("Vaccinated sample size, n = ", 
+                        prettyNum(samplesize_v5, big.mark = ",")),
+                 cells_column_labels("Vaccinated")) %>%
+    tab_footnote(paste0("Unvaccinated sample size, n = ", 
+                        prettyNum(samplesize_unv5, big.mark = ",")),
+                 cells_column_labels("Unvaccinated")) %>%
+    tab_footnote(paste0("All sample size, n = ", 
+                        prettyNum(samplesize_all5, big.mark = ",")),
+                 cells_column_labels("All"))
+```
+
+As we can see, there are similarities and differences between the common barriers 
+to vaccination for the vaccinated and the unvaccinated. "No vaccines or vaccine 
+appointments" is the top selected barrier for both. Nevertheless, the other two 
+top reasons commonly selected by the vaccinated are eligibility requirements 
+and technical difficulties, while the unvaccinated select time didn’t work 
+and desired brand not available most, which is unexpected for us. What is 
+noticeable is that  barrier "nave not tried yet" also stands high among the 
+unvaccinated. This is what we would expect to happen in normal circumstances: 
+As more people get vaccinated, the people who remain unvaccinated are those who 
+either don’t want to be vaccinated or haven’t yet been able to.
+
+But these numbers don’t tell the whole story. It’s also very insightful to look 
+at the time trend plot for barriers. The common barriers to vaccination varied 
+throughout the past half year with the announcement for boosters, new policies, 
+the larger population of the vaccinated and so on. In order to have clearer 
+overview on the changes, we plot the trend for the barriers to vaccination for 
+the vaccinated from May, 2021 to February, 2022, and two major discoveries are s
+potted:
+
+
+```{r}
+# specify the factor levels for barriers in the descending order
+month_barrier_vaccinated_all_long$barriers <- factor(
+  month_barrier_vaccinated_all_long$barriers, 
+  levels = c("No vaccines or appointments", "Times didn't work",
+             "Eligibility requirements", "Can't get time off",  
+             "Technical difficulties", "Can't travel to vaccine site",
+             "Desired brand not available", "Limited Internet/phone access",
+             "Childcare", "Document requirements", "Language barrier"))
+ 
+ggplot(month_barrier_vaccinated_all_long, 
+       mapping = aes(x = period_val, y = percentage)) +
+      geom_line(aes(color = factor(barriers))) +
+      geom_text(data = month_barrier_vaccinated_all_long %>% 
+                  group_by(barriers) %>% arrange(desc(period_val)) %>% 
+                  slice(1) %>% 
+                  filter(percentage >= 35),
+            aes(x = period_val - 0.2, y = percentage + 2,
+                label = barriers), hjust=0, size=3) +
+      geom_vline(xintercept = as.yearmon("202111","%Y%m"), color = "red", linetype = "dashed") +
+      geom_text( aes(x = as.yearmon("202111","%Y%m"), y = 0, 
+                     label= as.character(as.yearmon("202111","%Y%m"))
+                     ), hjust=-0.1, size=3, color = "red") +
+      labs(x="month", y="% barriers among all the vaccinated",
+           color="Barriers", 
+           title="Common barriers to vaccination for the vaccinated",
+           subtitle = "From Delphi's surveys, conducted through Facebook",
+           caption = "Data from Delphi COVIDcast, delphi.cmu.edu") +
+      theme_bw() +
+      scale_color_brewer(palette="Paired")
+```
+
+
+Firstly, same as we have noticed in the previous May 2021 table, "No vaccines or
+appointments" really stands out from all the other barriers, and the percentage 
+is as twice high as the second high barrier "Eligibility requirements". Another 
+thing worth noticing is that November 2021 seems to be an important turning 
+point for many barriers, which is especially obvious for “No vaccines or 
+appointment”. The explanation we have is, on November 19, 2021, [CDC expands eligibility for COVID-19 booster shots to all adults](https://www.cdc.gov/media/releases/2021/s1119-booster-shots.html), so we
+were expecting higher demand for vaccination appointments, and thus higher 
+barrier percentage.
+
+Since we also ask respondents about their age groups, to have more in-depth idea
+on how each age group was affected by different barriers, we decide to divide 
+our recipients into 4 age groups: 18-24 years, 25-44 years, 45-64 years and over
+65.
+
+
+```{r}
+# specify the factor levels for barriers in the descending order
+month_barrier_vaccinated_long$barriers <- factor(
+  month_barrier_vaccinated_long$barriers, 
+  levels = c("No vaccines or appointments", "Can't get time off",
+             "Times didn't work", "Can't travel to vaccine site",
+             "Technical difficulties", "Eligibility requirements", 
+             "Desired brand not available", "Childcare",
+             "Limited Internet/phone access", "Document requirements", 
+             "Language barrier"))
+
+ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "18-24"),], 
+       mapping = aes(x = period_val, y = percentage, color = factor(barriers))) +
+      geom_line() +
+      geom_text(data = 
+          month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "18-24"),] %>% 
+                  group_by(barriers) %>% arrange(desc(period_val)) %>% 
+                  slice(1) %>% 
+                  filter(percentage >= 6),
+            aes(x = period_val - 0.16, y = percentage ,
+                label = barriers), hjust=0, size=2.2) +
+      geom_vline(xintercept = as.yearmon("202111","%Y%m"), color = "red", linetype = "dashed") +
+      geom_text( aes(x = as.yearmon("202111","%Y%m"), y = 0, 
+                     label= as.character(as.yearmon("202111","%Y%m"))
+                     ), hjust=-0.1, size=3, color = "red") +  
+      labs(x="month", y="% barriers among all the vaccinated",
+           color="Barriers", 
+           title="Common barriers to vaccination for the vaccinated aged 18-24",
+           subtitle = "From Delphi's surveys, conducted through Facebook",
+           caption = "Data from Delphi COVIDcast, delphi.cmu.edu") +
+      theme_bw() +
+      scale_color_brewer(palette="Paired")
+```
+
+
+For the age group 18-24 years, consistent with the all vaccinated, November 2021
+is also a turning point for many barriers, which is obvious for top 3 barriers: 
+"no vaccines or appointments", "can’t get time off" and "time didn’t work". 
+This is totally understandable, because many in this age group are students or 
+hourly workers, and their time is less flexible. To look more closely, both "no 
+vaccines or appointments" and "time didn’t work" barriers increase a lot since 
+November 2021, thus we suggest add more appointments every time a new 
+vaccination is introduced. Since "can’t get time off" basically fluctuates, this
+suggests that adding more flexible "vaccination" time-off for hour-based workers
+and students should be considered to raise vaccination rate in the long term.
+
+
+```{r}
+# specify the factor levels for barriers in the descending order
+month_barrier_vaccinated_long$barriers <- factor(
+  month_barrier_vaccinated_long$barriers, 
+  levels = c("No vaccines or appointments", "Technical difficulties",
+             "Can't travel to vaccine site", "Eligibility requirements",
+             "Limited Internet/phone access", "Times didn't work",
+             "Desired brand not available", "Can't get time off",
+             "Document requirements", "Childcare", "Language barrier"))
+
+ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "65plus"),], 
+       mapping = aes(x = period_val, y = percentage, color = factor(barriers))) +
+      geom_line() +
+      geom_text(data = 
+          month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "65plus"),] %>% 
+                  group_by(barriers) %>% arrange(desc(period_val)) %>% 
+                  slice(1) %>% 
+                  filter(percentage >= 3),
+            aes(x = period_val - 0.1, y = percentage + 0.7 ,
+                label = barriers), hjust=0, size=2.2) +
+      geom_vline(xintercept = as.yearmon("202111","%Y%m"), color = "red", linetype = "dashed") +
+      geom_text( aes(x = as.yearmon("202111","%Y%m"), y = 0, 
+                     label= as.character(as.yearmon("202111","%Y%m"))
+                     ), hjust=-0.1, size=3, color = "red") +  
+      labs(x="month", y="% barriers among all the vaccinated",
+           color="Barriers", 
+           title="Common barriers to vaccination for the vaccinated aged over 65",
+           subtitle = "From Delphi's surveys, conducted through Facebook",
+           caption = "Data from Delphi COVIDcast, delphi.cmu.edu") +
+      theme_bw() +
+      scale_color_brewer(palette="Paired")
+```
+
+
+Also consistent with the all vaccinated, in the age group over 65, November 2021 
+is also a turning point for many barriers, indicating the introduce of booster 
+also causes effect on the age group over 65. Given the top selected two barriers 
+align with what we are expected, this age group will experience trouble making 
+appointments online for vaccination. (Another possible explanation for this is 
+that the releasing time at the start period of online appointment for vaccination
+is usually 12a.m., which is not an ideal time for people who is over 65). Though
+"technical difficulties" decreases a lot from May to February, but it still 
+remains to be a major problem compared with other barriers. Thus, we suggest 
+provide more convenient vaccine appointments/ services for people aged over 65.
+
+As mentioned in the very beginning of the article, cases for the unvaccinated 
+can be different from the vaccinated. Since the most barriers of the 
+unvaccinated just fluctuate, instead, we will just look at the most recent data 
+collected on January 2022 as below:
+
+
+```{r}
+# percentage table for different barriers by vaccination status on May,2021
+
+## sample size without removing "none of above" (barrier 11)
+# sample size for the unvaccinated Jan
+samplesize_unv1_use <- survey1_full %>% filter(V1==2 & !is.na(V15b)) %>% nrow
+samplesize_unv1_1824_use <- survey1_full %>% filter(V1==2 & !is.na(V15b) & age=="18-24 years") %>% nrow
+samplesize_unv1_2544_use <- survey1_full %>% filter(V1==2 & !is.na(V15b) & age=="25-44 years") %>% nrow
+samplesize_unv1_4564_use <- survey1_full %>% filter(V1==2 & !is.na(V15b) & age=="45-64 years") %>% nrow
+samplesize_unv1_65_use <- survey1_full %>% filter(V1==2 & !is.na(V15b) & age=="65 years or older") %>% nrow
+
+## sample size removing "none of above" (barrier 11)
+# sample size for the unvaccinated Jan
+samplesize_unv1 <- jan_v15b_input %>% nrow
+samplesize_unv1_1824 <- jan_v15b_input %>% filter(age=="18-24 years") %>% nrow
+samplesize_unv1_2544 <- jan_v15b_input %>% filter(age=="25-44 years") %>% nrow
+samplesize_unv1_4564 <- jan_v15b_input %>% filter(age=="45-64 years") %>% nrow
+samplesize_unv1_65 <- jan_v15b_input %>% filter(age=="65 years or older") %>% nrow
+
+# percentage for barriers who have vaccinated
+freq <- table(unlist(jan_v15b_input$barriers))
+freq_1824 <- table(unlist(jan_v15b_input$barriers[which(jan_v15b_input$age=="18-24 years")]))
+freq_2544 <- table(unlist(jan_v15b_input$barriers[which(jan_v15b_input$age=="25-44 years")]))
+freq_4564 <- table(unlist(jan_v15b_input$barriers[which(jan_v15b_input$age=="45-64 years")]))
+freq_65 <- table(unlist(jan_v15b_input$barriers[which(jan_v15b_input$age=="65 years or older")]))
+
+prop <- as.data.frame(freq/samplesize_unv1)
+prop_1824 <- as.data.frame(freq_1824/samplesize_unv1_1824)
+prop_2544 <- as.data.frame(freq_2544/samplesize_unv1_2544)
+prop_4564 <- as.data.frame(freq_4564/samplesize_unv1_4564)
+prop_65 <- as.data.frame(freq_65/samplesize_unv1_65)
+
+vac_1824 <- as.double(pull(prop_1824, Freq))
+vac_2544 <- as.double(pull(prop_2544, Freq))
+vac_4564 <- as.double(pull(prop_4564, Freq))
+vac_65 <- as.double(pull(prop_65, Freq))
+
+# order the table by frequency of barriers of all unvaccinated in descending order
+table_jan <- mutate(prop, vac_1824, vac_2544, vac_4564, vac_65)
+table_jan <- table_jan[with(table_jan,order(Freq, decreasing = TRUE)),]
+
+
+table_jan[,2:6] <- apply(table_jan[,2:6], 2, function(x) percent(x, accuracy=0.01))
+
+colnames(table_jan) <- c("Barriers","All","18-24 years", "25-44 years","45-64 years", "over 65 years")
+
+# transform the barriers abbreviation into long ones
+table_jan$Barriers <- lapply(table_jan$Barriers, function(s) unlist(barrier_explain[s]))
+```
+
+
+```{r}
+# comparison table on May, 2021 by vaccination status
+gt(table_jan[-1,]) %>%
+    cols_align(
+    align = "left",
+    columns = "Barriers"
+  ) %>%
+    cols_align(
+    align = "right",
+    columns = c("All","18-24 years", "25-44 years",
+                "45-64 years", "over 65 years")
+  ) %>%
+  tab_header(
+    title = md("**Common barriers to vaccination**"),
+    subtitle = md("Jan, 2021*")
+  ) %>%
+    tab_footnote(paste0("Unvaccinated sample size of all, n = ", 
+                        prettyNum(samplesize_unv1_use, big.mark = ",")),
+                 cells_column_labels("All")) %>%
+    tab_footnote(paste0("Unvaccinated sample size of 18-24 years, n = ", 
+                        prettyNum(samplesize_unv1_1824_use, big.mark = ",")),
+                 cells_column_labels("18-24 years")) %>%
+    tab_footnote(paste0("Unvaccinated sample size of 25-44 years, n = ", 
+                        prettyNum(samplesize_unv1_2544_use, big.mark = ",")),
+                 cells_column_labels("25-44 years")) %>%
+    tab_footnote(paste0("Unvaccinated sample size of 45-64 years, n = ", 
+                        prettyNum(samplesize_unv1_4564_use, big.mark = ",")),
+                 cells_column_labels("45-64 years")) %>%
+    tab_footnote(paste0("Unvaccinated sample size of over 65 years, n = ", 
+                        prettyNum(samplesize_unv1_65_use, big.mark = ",")),
+                 cells_column_labels("over 65 years"))  
+```
+
+
+The picture is consistent across all unvaccinated age groups. Aside from "other"
+and "have not tried yet", the top selected barrier for both 18-24 years and 
+25-44 years is "can’t get time off", and for both 45-64 years and over 65 years,
+it is "can’t travel to vaccination site". In addition to providing more 
+available vaccination services for more sites, we also suggest distribute evenly
+vaccination supplies of different brands and provide more choices for potential 
+vaccine recipients, noting that "desired brands not available" exceed 10% across
+all age groups.
+
+
+## Limitations
+
+As with any scientific study, there are limitations to the results seen above.
+Here are a few important things to keep in mind:
+
+* **We're surveying Facebook users.** While we [weight survey
+  responses](https://arxiv.org/abs/2009.14675) to ensure their age and gender
+  distribution matches the United States population, our respondents do tend to
+  be more educated than the national average, which the weights do not correct
+  for.
+* **The survey is voluntary.** Facebook draws a random sample of active users
+  every day and invites them to take the survey via a promotion in their News
+  Feed. Many people don't respond to the invitation, and while the
+  Facebook-provided survey weights attempt to account for this by using models
+  to predict the probability each user will respond, there may still be
+  unobserved biases remaining.
+* **•	The sample size gap cannot be ignored.** One result of these biases is that
+  our estimate of the percent of Americans who have already received a COVID 
+  vaccine is too high for 2021 when compared against official CDC data. Thus, in 
+  our May,2021 table, the data should not be very accurate representative of all 
+  the American people.
+* **Survey responses are simplifications.** Our respondents can select reasons
+  for hesitancy from a list, but ticking boxes can't fully represent the
+  complexity of their beliefs and the reasons for their lack of trust in COVID
+  vaccines. Also, their responses may not always match their behavior: a
+  respondent who says they who says they “have not tried yet” get vaccinated may
+  decide to get vaccinated when a desired brand dose is offered to them.
+
+
+## Conclusions
+
+Based on the vaccination barriers of survey responses from hundreds of thousands
+of Facebook users, we divide them by two vaccination status and four age groups.
+While there is disparity between the vaccinated and the unvaccinated, the most 
+common barrier for both is "no vaccines or appointments", and the scenario 
+remains the same from May 2021 to February 2022 for all the vaccinated age 
+groups. This may suggest we should take extra efforts to ensure access to 
+vaccines for potential vaccine recipients. On the top of that, November 2021 
+appears to be a turning point, since then, the percentages for many barriers 
+have raised. Noting it is when the eligibility for COVID-19 booster shots 
+expands to all adults, extra availability for vaccination and service may be 
+ensured whenever a new dose is introduced.
+
+To take a closer look, for the vaccinated 18-24 years, "time didn’t work" and 
+"can’t get time off" stand high among the barriers, while for the vaccinated 
+over 65 years, "technical difficulties" has diminished considerably but remains 
+relatively high. There are no magic solutions, but we are suggesting offering 
+more "vaccination time-off" for students and time-based workers, and offering 
+more convenient vaccine appointments/ services for people aged over 65.
+
+Nonetheless, different from the vaccinated, among all the unvaccinated age 
+groups, "desired brands not available" is commonly selected. Thus, we propose 
+evenly distribute vaccine supplies between different brands to provide diverse 
+options for potential vaccine recipients.
+
+Nonetheless, this demonstrates the value of Delphi's [COVID Symptom
+Surveys](https://delphi.cmu.edu/covidcast/surveys/) for studying public
+attitudes and behavior during the pandemic. In partnership with Facebook, who
+help us distribute the surveys, and the University of Maryland, who run [an
+international version](https://covidmap.umd.edu/) in 56 languages worldwide, we
+have been able to track the pandemic and its effects on society for over a year
+now. And much of our data is easily accessible to researchers, through
+aggregates in the [Delphi COVIDcast Epidata
+API](https://cmu-delphi.github.io/delphi-epidata/api/covidcast-signals/fb-survey.html)
+and [tables available for
+download](https://cmu-delphi.github.io/delphi-epidata/symptom-survey/contingency-tables.html),
+and as de-identified individual responses for [researchers who sign Data Use
+Agreements](https://cmu-delphi.github.io/delphi-epidata/symptom-survey/data-access.html).
+With so many responses daily, we can react quickly and spot local changes. If
+you're conducting COVID-related research, we encourage you to explore the data
+and see how it can help you.
+
+
+
+
+
+
+
+
+
+
+
+

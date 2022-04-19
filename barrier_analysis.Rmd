@@ -823,7 +823,7 @@ Here are a few important things to keep in mind:
   Facebook-provided survey weights attempt to account for this by using models
   to predict the probability each user will respond, there may still be
   unobserved biases remaining.
-* **•	The sample size gap cannot be ignored.** One result of these biases is that
+* **The sample size gap cannot be ignored.** One result of these biases is that
   our estimate of the percent of Americans who have already received a COVID 
   vaccine is too high for 2021 when compared against official CDC data. Thus, in 
   our May,2021 table, the data should not be very accurate representative of all 

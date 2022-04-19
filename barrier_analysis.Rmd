@@ -44,6 +44,7 @@ library(ggrepel)
 library(data.table)
 library(readr)
 library(scales)
+library(anytime)
 
 knitr::opts_chunk$set(echo = FALSE)
 ```
@@ -217,7 +218,7 @@ v15b_input <- v15b_input[-which(is.na((survey5$barriers[which(survey5$V1 == 2)])
 ```{r}
 ## trend plot for all the vaccinated
 # exclude "none" barrier
-month_barrier_vaccinated <- data.frame(as.numeric(survey_month$period_val),
+month_barrier_vaccinated <- data.frame(as.character(survey_month$period_start),
                       survey_month$age,
                       survey_month$val_pct_vaccine_barrier_eligible_has,
                       survey_month$val_pct_vaccine_barrier_no_appointments_has,
@@ -239,11 +240,7 @@ colnames(month_barrier_vaccinated) <- c("period_val","age","eligible","no_appoin
                              "document","technology_access","travel","language",
                              "childcare","time","type")
 
-# convert period into "year/month" format
-date <- paste("2021", month_barrier_vaccinated$period_val[1:40], sep = "")
-date <- append(date,paste("2022", month_barrier_vaccinated$period_val[41:50], sep = ""))
-
-month_barrier_vaccinated$period_val <- as.yearmon(date,"%Y%m")
+month_barrier_vaccinated$period_val <- as.Date(month_barrier_vaccinated$period_val,'%Y%m%d')
 
 # aggregate the age groups for all vaccinated
 month_barrier_vaccinated_all <- month_barrier_vaccinated %>% group_by(period_val) %>%
@@ -501,23 +498,23 @@ table[,2:4] <- apply(table[,2:4], 2, function(x) percent(x, accuracy=0.01))
 colnames(table) <- c("Barriers","All", "Vaccinated","Unvaccinated")
 
 # transform the barriers abbreviation into long ones
-barrier_explain <- list(
-  "Eligibility requirements"="I did not meet the eligibility requirements",
-  "No vaccines or appointments"="There were no vaccines or vaccine appointments available",
-  "Times didn't work"="The available appointment times did not work for me",
-  "Technical difficulties"="There were technical difficulties with the website or phone line",
-  "Document requirements"="I was unable to provide a required document",
-  "Limited Internet/phone access"="Limited access to internet or phone to schedule an appointment",
-  "Can't travel to vaccine site"="Difficulty traveling to a vaccination site",
-  "Language barrier"="Information not available in my native language",
-  "Childcare"="There is no one to provide childcare while getting the vaccine",
-  "Can't get time off"="It was difficult to get time away from work or school",
-  "Desired brand not available"="I could not get the type of vaccine I wanted",
-  "Have not tried yet"="I have not tried to get the vaccine",
-  "Available locations did't work"="The available appointment locations did not work for me",
-  "Other"="Other")
+new_barriers <- c(
+  "There were no vaccines or vaccine appointments available", 
+  "I did not meet the eligibility requirements",
+  "There were technical difficulties with the website or phone line", 
+  "Difficulty traveling to a vaccination site",
+  "It was difficult to get time away from work or school", 
+  "The available appointment times did not work for me",
+  "I could not get the type of vaccine I wanted", 
+  "Limited access to internet or phone to schedule an appointment",
+  "There is no one to provide childcare while getting the vaccine",
+  "I was unable to provide a required document",
+  "Information not available in my native language",
+  "I have not tried to get the vaccine"
+)
 
-table$Barriers <- lapply(table$Barriers, function(s) unlist(barrier_explain[s]))
+table$Barriers <- new_barriers
+
 
 ```
 
@@ -581,16 +578,17 @@ month_barrier_vaccinated_all_long$barriers <- factor(
 ggplot(month_barrier_vaccinated_all_long, 
        mapping = aes(x = period_val, y = percentage)) +
       geom_line(aes(color = factor(barriers))) +
+      scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", date_labels = "%b %Y") +  
       geom_text(data = month_barrier_vaccinated_all_long %>% 
                   group_by(barriers) %>% arrange(desc(period_val)) %>% 
                   slice(1) %>% 
                   filter(percentage >= 35),
-            aes(x = period_val - 0.2, y = percentage + 2,
-                label = barriers), hjust=0, size=3) +
-      geom_vline(xintercept = as.yearmon("202111","%Y%m"), color = "red", linetype = "dashed") +
-      geom_text( aes(x = as.yearmon("202111","%Y%m"), y = 0, 
-                     label= as.character(as.yearmon("202111","%Y%m"))
-                     ), hjust=-0.1, size=3, color = "red") +
+            aes(x = period_val, y = percentage+2.5,
+                label = barriers), hjust= 0.9, size=3) +
+      geom_vline(xintercept = as.Date("20211101","%Y%m%d"), color = "red", linetype = "dashed") +
+      geom_text( aes(x = as.Date("20211101","%Y%m%d"), y = 0, 
+                     label= "Nov 2021"),
+                 hjust=-0.1, size=3, color = "red") +
       labs(x="month", y="% barriers among all the vaccinated",
            color="Barriers", 
            title="Common barriers to vaccination for the vaccinated",

@@ -50,38 +50,6 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-## data we will be using for the post
-
-# load the data we need for Wave 11 in May
-survey5_full <- fread("/Users/bb/Box/CTIS\ data/2021-05-race-ethnicity.csv.gz")
-
-
-# remove barrier 11 "None of the above"
-survey5 <- fread("/Users/bb/Box/CTIS\ data/2021-05-race-ethnicity.csv.gz") %>% 
-  filter(is.na(V15a) | V15a != "11",
-         is.na(V15b) | V15b != "11")
-
-survey5$barriers_logic <- split_options(coalesce(survey5$V15a, survey5$V15b))
-
-
-# load the data we need for trend plot
-# read in the data
-survey_month <- fread("/Users/bb/Box/CTIS\ data/monthly_nation_age.csv.gz")
-
-
-# load the data we need for Wave 12 in Jan,2022
-survey1_full <- fread("/Users/bb/Box/CTIS\ data/2022-01-race-ethnicity.csv.gz")
-
-# new barriers were introduced in Wave 12 in Jan,2022
-survey1 <- fread("/Users/bb/Box/CTIS\ data/2022-01-race-ethnicity.csv.gz") %>% 
-  filter(is.na(V15c) | V15c != "11",
-         is.na(V15b) | V15b != "11")
-
-survey1$barriers_logic <- split_options(coalesce(as.character(survey1$V15c), survey1$V15b))
-
-```
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # load the fuctions we need
 split_options <- function(column) {
   return(strsplit(column, ",", fixed = TRUE))
@@ -112,6 +80,39 @@ code_demographics <- function(d) {
     is.na(d$D7) | is.na(d$D7) ~ NA_character_,
     TRUE ~ "Other"
   )}
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+## data we will be using for the post
+
+# load the data we need for Wave 11 in May
+survey5_full <- fread("/Users/bb/Box/CTIS\ data/2021-05-race-ethnicity.csv.gz")
+
+
+# remove barrier 11 "None of the above"
+survey5 <- fread("/Users/bb/Box/CTIS\ data/2021-05-race-ethnicity.csv.gz") %>% 
+  filter(is.na(V15a) | V15a != "11",
+         is.na(V15b) | V15b != "11")
+
+survey5$barriers_logic <- split_options(coalesce(survey5$V15a, survey5$V15b))
+
+
+# load the data we need for trend plot
+# read in the data
+survey_month <- fread("/Users/bb/Box/CTIS\ data/monthly_nation_age.csv.gz")
+
+
+# load the data we need for Wave 12 in Jan,2022
+survey1_full <- fread("/Users/bb/Box/CTIS\ data/2022-01-race-ethnicity.csv.gz")
+
+# new barriers were introduced in Wave 12 in Jan,2022
+survey1 <- fread("/Users/bb/Box/CTIS\ data/2022-01-race-ethnicity.csv.gz") %>% 
+  filter(is.na(V15c) | V15c != "11",
+         is.na(V15b) | V15b != "11")
+
+survey1$barriers_logic <- split_options(coalesce(as.character(survey1$V15c), survey1$V15b))
+
 ```
 
 
@@ -214,6 +215,7 @@ v15b_input$age <- as.character(v15b_input$age)
 #remove the "NA" rows (the highest pike in the plot) for not vaccinated
 v15b_input <- v15b_input[-which(is.na((survey5$barriers[which(survey5$V1 == 2)]))),]
 ```
+
 
 ```{r}
 ## trend plot for all the vaccinated
@@ -334,6 +336,18 @@ month_barrier_vaccinated_long$barriers <- barriers_new
 
 
 ```{r}
+# add "age" column to the Jan,2022 full data frame 
+survey1_full$age <- lapply(
+  survey1_full$D2,
+  function(s) {
+    if (all(is.na(s))) {
+      NA
+    } else {
+      unlist(age_logic[s])
+    }
+  }
+)
+
 ## prepare data for the unvaccinated table for Jan,2022
 barriers_jan <- list(
   "1" = "Eligibility requirements",
@@ -628,17 +642,17 @@ month_barrier_vaccinated_long$barriers <- factor(
 ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "18-24"),], 
        mapping = aes(x = period_val, y = percentage, color = factor(barriers))) +
       geom_line() +
-      geom_text(data = 
-          month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "18-24"),] %>% 
+      scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", date_labels = "%b %Y") +
+      geom_text(
+        data = month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == "18-24"),] %>% 
                   group_by(barriers) %>% arrange(desc(period_val)) %>% 
                   slice(1) %>% 
                   filter(percentage >= 6),
-            aes(x = period_val - 0.16, y = percentage ,
-                label = barriers), hjust=0, size=2.2) +
-      geom_vline(xintercept = as.yearmon("202111","%Y%m"), color = "red", linetype = "dashed") +
-      geom_text( aes(x = as.yearmon("202111","%Y%m"), y = 0, 
-                     label= as.character(as.yearmon("202111","%Y%m"))
-                     ), hjust=-0.1, size=3, color = "red") +  
+            aes(x = period_val, y = percentage ,
+                label = barriers), hjust= 1.1, size=3) +
+      geom_vline(xintercept = as.Date("20211101","%Y%m%d"), color = "red", linetype = "dashed") +
+      geom_text( aes(x = as.Date("20211101","%Y%m%d"), y = 0, 
+                     label= "Nov 2021"), hjust=-0.1, size=3, color = "red") +  
       labs(x="month", y="% barriers among all the vaccinated",
            color="Barriers", 
            title="Common barriers to vaccination for the vaccinated aged 18-24",
@@ -679,12 +693,11 @@ ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == 
                   group_by(barriers) %>% arrange(desc(period_val)) %>% 
                   slice(1) %>% 
                   filter(percentage >= 3),
-            aes(x = period_val - 0.1, y = percentage + 0.7 ,
-                label = barriers), hjust=0, size=2.2) +
-      geom_vline(xintercept = as.yearmon("202111","%Y%m"), color = "red", linetype = "dashed") +
-      geom_text( aes(x = as.yearmon("202111","%Y%m"), y = 0, 
-                     label= as.character(as.yearmon("202111","%Y%m"))
-                     ), hjust=-0.1, size=3, color = "red") +  
+            aes(x = period_val, y = percentage,
+                label = barriers), hjust= 1, vjust= -2.2, size= 3) +
+      geom_vline(xintercept = as.Date("20211101","%Y%m%d"), color = "red", linetype = "dashed") +
+      geom_text( aes(x = as.Date("20211101","%Y%m%d"), y = 0, 
+                     label= "Nov 2021"), hjust=-0.1, size=3, color = "red") +  
       labs(x="month", y="% barriers among all the vaccinated",
            color="Barriers", 
            title="Common barriers to vaccination for the vaccinated aged over 65",
@@ -692,6 +705,7 @@ ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == 
            caption = "Data from Delphi COVIDcast, delphi.cmu.edu") +
       theme_bw() +
       scale_color_brewer(palette="Paired")
+
 ```
 
 
@@ -713,8 +727,6 @@ collected on January 2022 as below:
 
 
 ```{r}
-# percentage table for different barriers by vaccination status on May,2021
-
 ## sample size without removing "none of above" (barrier 11)
 # sample size for the unvaccinated Jan
 samplesize_unv1_use <- survey1_full %>% filter(V1==2 & !is.na(V15b)) %>% nrow
@@ -758,14 +770,32 @@ table_jan[,2:6] <- apply(table_jan[,2:6], 2, function(x) percent(x, accuracy=0.0
 
 colnames(table_jan) <- c("Barriers","All","18-24 years", "25-44 years","45-64 years", "over 65 years")
 
+
 # transform the barriers abbreviation into long ones
-table_jan$Barriers <- lapply(table_jan$Barriers, function(s) unlist(barrier_explain[s]))
+new_barriers_jan <- c(
+  "Other",
+  "There were no vaccines or vaccine appointments available", 
+  "The available appointment times did not work for me",
+  "It was difficult to get time away from work or school",
+  "I have not tried to get the vaccine",
+  "Difficulty traveling to a vaccination site",
+  "The available appointment locations did not work for me",
+  "I could not get the type of vaccine I wanted",
+  "I did not meet the eligibility requirements",
+  "There were technical difficulties with the website or phone line",
+  "Limited access to internet or phone to schedule an appointment",
+  "There is no one to provide childcare while getting the vaccine",
+  "I was unable to provide a required document",
+  "Information not available in my native language"
+)
+
+table_jan$Barriers <- new_barriers_jan
 ```
 
 
 ```{r}
 # comparison table on May, 2021 by vaccination status
-gt(table_jan[-1,]) %>%
+gt(table_jan) %>%
     cols_align(
     align = "left",
     columns = "Barriers"

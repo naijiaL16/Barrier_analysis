@@ -420,49 +420,17 @@ administration in individuals 16 years of age and older. This declared the
 universal acceptance for vaccination, and another significant step to return to 
 normality.
 
-By understanding and assisting overcome the barriers to vaccination, one of the 
-major goals for Delphi group has always been helping raise the vaccination rate 
-and resume the normal life. And that’s why, through its COVID-19 Trends and 
-Impact Survey, the Delphi Group started to track COVID vaccination barriers 
-right after FDA’s announcement, to help understand the vaccination barriers by 
-vaccination status and age groups. Delphi’s COVID-19 Trends and Impact Survey
-is a massive survey distributed daily across the United States through our 
-partnership with Facebook, and with the help of it, we’ve successfully tracked `r blogdown::shortcode_html("reflink", "2021-01-22-holiday-surveys", "social distancing")` 
-and `r blogdown::shortcode_html("reflink", "2020-12-10-masks-public", "mask use")`,
-and gave some thoroughly insights of `r blogdown::shortcode_html("reflink", "2021-04-20-jj-vaccine", "vaccine hesitancy")`.
+Since the vaccines first were authorized in December 2020 to healthcare workers, we’ve been trying to vaccinate everyone who is eligible in the US. Early on, vaccines were only available to certain groups; 2 months later, Covid-19 vaccines became generally available across the US, and by May, President Biden announced that they were widely available and everyone should get them.
 
-Since May 20th, 2021, we have asked all respondents about whether they have 
-experienced specific barriers to getting the COVID-19 vaccine based on
-their vaccination status. Combined with their answers on age groups, we can have
-a general idea of the common barriers to vaccination by vaccination status and 
-age groups, and make monthly comparison from May 2022 to now.
+However, despite all that, many people were still not vaccinated by May, and vaccine uptake has not been as high as initially hoped. And that’s why, through its COVID-19 Trends and Impact Survey, the Delphi Group started to track COVID vaccination barriers to help understand the vaccination barriers by vaccination status and age groups.
 
-From our finding, based on the different vaccination status and age groups, our 
-survey respondents have encountered different barriers to vaccination. Though, 
-our data does suggest that extra efforts should be taken to ensure enough 
-availability to vaccination for potential vaccine recipients.
+Since May 20th, 2021, we have asked all respondents whether they have experienced specific barriers to getting the COVID-19 vaccine based on their vaccination status. We hope, through this article, we can give more insightful ideas and suggestions on why people are unvaccinated and how they can enable helping potential vaccinees get vaccinated.
 
-Not surprisingly, CDC has already suggested multiple approaches that can 
-[help increase COVID-19 Vaccination](https://www.cdc.gov/vaccines/covid-19/health-departments/generate-vaccinations.html#:~:text=Partner%20with%20local%20community%20groups,or%20request%20at%2Dhome%20vaccinations),
-including reaching people where they live, work, learn, pray, play, gather or 
-through existing programs and the internet. For example, CDC mentions providing 
-at-home vaccination for those have difficulty accessing a vaccination, like older
-adults, is a great way to increase vaccine rate for priority populations. 
-Besides, by offering options including allowing employees to be away during work
-hours or to taking paid leave to get vaccinated, reimbursing employees for 
-transportation costs, and offering on-site vaccination, employers can help 
-employees get vaccinated. We hope, through this article, we can give more 
-insightful suggestions on how we could make vaccines more available to more 
-potential recipient by different age groups.
+# Common barriers in May 2021
 
+Let’s start with the common barriers to vaccination on May, 2021 by vaccination status. First, we ask respondents whether they have been vaccinated or not, and according to their vaccination status, they will be given a list of 12 or 13 specific barriers. Respondents can select multiple reasons, so the numbers do not add to 100%. Also, we ask unvaccinated people if they've tried to get vaccinated, and if the answer is no, we don't ask them about barriers. 
 
-Let’s start with the common barriers to vaccination on May, 2021 by vaccination 
-status. First, we ask respondents whether they have been vaccinated or not, and
-according to their vaccination status, they will be given a list of 12 or 13 
-specific barriers. Respondents can select multiple reasons, so the numbers do 
-not add to 100%. One thing we also need to notice is the huge sample size 
-disparity between the vaccinated and the unvaccinated, which could possibly 
-affect the accuracy of the measurement for all respondents.
+This may explain why there are so few unvaccinated people in the table below: many unvaccinated people had not tried to get vaccinated. The huge sample size disparity between the vaccinated and the unvaccinated could possibly affect the accuracy of the measurement of the barriers for all respondents
 
 
 ```{r}
@@ -559,25 +527,11 @@ gt(table) %>%
                  cells_column_labels("All"))
 ```
 
-As we can see, there are similarities and differences between the common barriers 
-to vaccination for the vaccinated and the unvaccinated. "No vaccines or vaccine 
-appointments" is the top selected barrier for both. Nevertheless, the other two 
-top reasons commonly selected by the vaccinated are eligibility requirements 
-and technical difficulties, while the unvaccinated select time didn’t work 
-and desired brand not available most, which is unexpected for us. What is 
-noticeable is that  barrier "nave not tried yet" also stands high among the 
-unvaccinated. This is what we would expect to happen in normal circumstances: 
-As more people get vaccinated, the people who remain unvaccinated are those who 
-either don’t want to be vaccinated or haven’t yet been able to.
+As you can see, there are similarities and differences between the common barriers to vaccination for the vaccinated and the unvaccinated. “There were no vaccines or vaccine appointments” is the top selected barrier for both. Nevertheless, the other two top reasons commonly selected by the vaccinated are eligibility requirements and technical difficulties, while the unvaccinated most often say the available times didn’t work or they could not get the type of vaccine they wanted, which is unexpected for us. What is noticeable is that “I have not tried yet” barrier also stands high among the unvaccinated. This is what we would expect to happen in normal circumstances: As more people get vaccinated, the people who remain unvaccinated are those who either don’t want to be vaccinated or haven’t yet been able to.
 
-But these numbers don’t tell the whole story. It’s also very insightful to look 
-at the time trend plot for barriers. The common barriers to vaccination varied 
-throughout the past half year with the announcement for boosters, new policies, 
-the larger population of the vaccinated and so on. In order to have clearer 
-overview on the changes, we plot the trend for the barriers to vaccination for 
-the vaccinated from May, 2021 to February, 2022, and two major discoveries are s
-potted:
+# Changing barriers over time
 
+But these numbers don’t tell the whole story. It’s also very insightful to look at the time trend plot for barriers. The common barriers to vaccination varied throughout the past half year with the announcement for boosters, new policies, the larger population of the vaccinated and so on. In order to have clearer overview on the changes, we plot the trend for the barriers to vaccination for the vaccinated from May, 2021 to February, 2022, and two major discoveries are spotted:
 
 ```{r}
 # specify the factor levels for barriers in the descending order
@@ -613,19 +567,12 @@ ggplot(month_barrier_vaccinated_all_long,
 ```
 
 
-Firstly, same as we have noticed in the previous May 2021 table, "No vaccines or
-appointments" really stands out from all the other barriers, and the percentage 
-is as twice high as the second high barrier "Eligibility requirements". Another 
-thing worth noticing is that November 2021 seems to be an important turning 
-point for many barriers, which is especially obvious for “No vaccines or 
-appointment”. The explanation we have is, on November 19, 2021, [CDC expands eligibility for COVID-19 booster shots to all adults](https://www.cdc.gov/media/releases/2021/s1119-booster-shots.html), so we
-were expecting higher demand for vaccination appointments, and thus higher 
-barrier percentage.
+Firstly, same as we have noticed in the previous May 2021 table, "No vaccines or appointments" really stands out from all the other barriers, and the percentage is as twice high as the second high barrier "Eligibility requirements". Another thing worth noticing is that November 2021 seems to be an important turning point for many barriers, which is especially obvious for “No vaccines or 
+appointment”. The explanation we have is, on November 19, 2021, [CDC expands eligibility for COVID-19 booster shots to all adults](https://www.cdc.gov/media/releases/2021/s1119-booster-shots.html), so we were expecting higher demand for vaccination appointments, and thus higher barrier percentage.
 
-Since we also ask respondents about their age groups, to have more in-depth idea
-on how each age group was affected by different barriers, we decide to divide 
-our recipients into 4 age groups: 18-24 years, 25-44 years, 45-64 years and over
-65.
+# Barriers experienced by each age group
+
+Since we also ask respondents about their age groups, to have more in-depth idea on how each age group was affected by different barriers, we decide to divide our recipients into 4 age groups: 18-24 years, 25-44 years, 45-64 years and over 65.
 
 
 ```{r}
@@ -663,16 +610,7 @@ ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == 
 ```
 
 
-For the age group 18-24 years, consistent with the all vaccinated, November 2021
-is also a turning point for many barriers, which is obvious for top 3 barriers: 
-"no vaccines or appointments", "can’t get time off" and "time didn’t work". 
-This is totally understandable, because many in this age group are students or 
-hourly workers, and their time is less flexible. To look more closely, both "no 
-vaccines or appointments" and "time didn’t work" barriers increase a lot since 
-November 2021, thus we suggest add more appointments every time a new 
-vaccination is introduced. Since "can’t get time off" basically fluctuates, this
-suggests that adding more flexible "vaccination" time-off for hour-based workers
-and students should be considered to raise vaccination rate in the long term.
+For the age group 18-24, consistent with the all vaccinated, November 2021 is also a turning point for many barriers, which is obvious for top 3 barriers: “no vaccines or appointments”, “can’t get time off” and “time didn’t work”. This is understandable, because many in this age group are students or hourly workers, and their time is less flexible. To look more closely, both “no vaccines or appointments” and “time didn’t work” barriers have increased a lot since November 2021, suggesting it is important to increase vaccination capacity when boosters are introduced. Since 'can't get time off' remains high throughout, this suggests that adding more flexible “vaccination” time-off for hour-based workers and students should be considered to raise vaccination rate in the long term.
 
 
 ```{r}
@@ -708,22 +646,9 @@ ggplot(month_barrier_vaccinated_long[which(month_barrier_vaccinated_long$age == 
 
 ```
 
+Also consistent with the all vaccinated, in the age group over 65, November 2021 is also a turning point for many barriers, indicating the introduction of boosters also caused changes in the age group over 65. Given the top selected two barriers align with what we expected, this age group will experience trouble making appointments online for vaccination. (Another possible explanation for this is that the releasing time at the start period of online appointment for vaccination is usually 12a.m., which is not an ideal time for people who is over 65). Though “technical difficulties” decreases a lot from May to February, but it still remains to be a major problem compared with other barriers. Thus, we suggest provide more convenient vaccine appointments/ services for people aged over 65.
 
-Also consistent with the all vaccinated, in the age group over 65, November 2021 
-is also a turning point for many barriers, indicating the introduce of booster 
-also causes effect on the age group over 65. Given the top selected two barriers 
-align with what we are expected, this age group will experience trouble making 
-appointments online for vaccination. (Another possible explanation for this is 
-that the releasing time at the start period of online appointment for vaccination
-is usually 12a.m., which is not an ideal time for people who is over 65). Though
-"technical difficulties" decreases a lot from May to February, but it still 
-remains to be a major problem compared with other barriers. Thus, we suggest 
-provide more convenient vaccine appointments/ services for people aged over 65.
-
-As mentioned in the very beginning of the article, cases for the unvaccinated 
-can be different from the vaccinated. Since the most barriers of the 
-unvaccinated just fluctuate, instead, we will just look at the most recent data 
-collected on January 2022 as below:
+As mentioned in the very beginning of the article, cases for the unvaccinated can be different from the vaccinated. Since the most barriers of the unvaccinated just fluctuate, instead, look just the most recent data collected on January 2022 as below:
 
 
 ```{r}
@@ -827,17 +752,10 @@ gt(table_jan) %>%
 ```
 
 
-The picture is consistent across all unvaccinated age groups. Aside from "other"
-and "have not tried yet", the top selected barrier for both 18-24 years and 
-25-44 years is "can’t get time off", and for both 45-64 years and over 65 years,
-it is "can’t travel to vaccination site". In addition to providing more 
-available vaccination services for more sites, we also suggest distribute evenly
-vaccination supplies of different brands and provide more choices for potential 
-vaccine recipients, noting that "desired brands not available" exceed 10% across
-all age groups.
+The picture is very consistent across all unvaccinated age groups. Aside from “other” and “have not tried yet”, the most common barrier for people aged 18-44 is getting time off of work, while for people aged over 45, it's traveling to the vaccination site. In addition to providing more available vaccination services for more sites, we also suggest distribute evenly vaccination supplies of different brands and provide more choices for potential vaccine recipients, noting that “desired brands not available” exceed 10% across all age groups.
 
 
-## Limitations
+# Limitations
 
 As with any scientific study, there are limitations to the results seen above.
 Here are a few important things to keep in mind:
@@ -853,11 +771,11 @@ Here are a few important things to keep in mind:
   Facebook-provided survey weights attempt to account for this by using models
   to predict the probability each user will respond, there may still be
   unobserved biases remaining.
-* **The sample size gap cannot be ignored.** One result of these biases is that
-  our estimate of the percent of Americans who have already received a COVID 
-  vaccine is too high for 2021 when compared against official CDC data. Thus, in 
-  our May,2021 table, the data should not be very accurate representative of all 
-  the American people.
+* **The sample size gap cannot be ignored.**The survey overrepresents vaccinated
+people. Compared to official CDC data, the survey estimate of the number of 
+Americans vaccinated in early 2021 is too high. As a result, the rates of barriers
+reported by our respondents may not match the rate experienced by the overall 
+American population.
 * **Survey responses are simplifications.** Our respondents can select reasons
   for hesitancy from a list, but ticking boxes can't fully represent the
   complexity of their beliefs and the reasons for their lack of trust in COVID
@@ -866,48 +784,14 @@ Here are a few important things to keep in mind:
   decide to get vaccinated when a desired brand dose is offered to them.
 
 
-## Conclusions
+# Conclusions
 
-Based on the vaccination barriers of survey responses from hundreds of thousands
-of Facebook users, we divide them by two vaccination status and four age groups.
-While there is disparity between the vaccinated and the unvaccinated, the most 
-common barrier for both is "no vaccines or appointments", and the scenario 
-remains the same from May 2021 to February 2022 for all the vaccinated age 
-groups. This may suggest we should take extra efforts to ensure access to 
-vaccines for potential vaccine recipients. On the top of that, November 2021 
-appears to be a turning point, since then, the percentages for many barriers 
-have raised. Noting it is when the eligibility for COVID-19 booster shots 
-expands to all adults, extra availability for vaccination and service may be 
-ensured whenever a new dose is introduced.
+Based on the vaccination barriers of survey responses from hundreds of thousands of Facebook users, we divide them by two vaccination status and four age groups. While there is disparity between the vaccinated and the unvaccinated, the most common barrier for both is no vaccines or appointments available, and the scenario remains the same from May 2021 to February 2022 among all the vaccinated age groups. This may suggest we should take extra efforts to ensure access to vaccines for potential vaccine recipients. On the top of that, November 2021 appears to be a turning point, since then, the percentages for many barriers have raised. Noting it is when the eligibility for COVID-19 booster shots expands to all adults, the demand for vaccination appointments will increase. Extra availability for vaccination and service may need to be be ensured whenever a new dose is introduced.
 
-To take a closer look, for the vaccinated 18-24 years, "time didn’t work" and 
-"can’t get time off" stand high among the barriers, while for the vaccinated 
-over 65 years, "technical difficulties" has diminished considerably but remains 
-relatively high. There are no magic solutions, but we are suggesting offering 
-more "vaccination time-off" for students and time-based workers, and offering 
-more convenient vaccine appointments/ services for people aged over 65.
+To take a closer look, for the vaccinated people who are between 18-24 years old, “time didn’t work” and “can’t get time off” stand high among the barriers, while for the vaccinated aged over 65, “technical difficulties” has diminished considerably but remains relatively high. There are no magic solutions, but as [CDC has already suggested](https://www.cdc.gov/vaccines/covid-19/health-departments/generate-vaccinations.html#:~:text=Partner%20with%20local%20community%20groups,or%20request%20at%2Dhome%20vaccinations), we are suggesting offering more “vaccination time-off” for students and time-based workers, and offering more convenient vaccine appointments/ services for priority populations like people aged over 65.
 
-Nonetheless, different from the vaccinated, among all the unvaccinated age 
-groups, "desired brands not available" is commonly selected. Thus, we propose 
-evenly distribute vaccine supplies between different brands to provide diverse 
-options for potential vaccine recipients.
+Nonetheless, different from the vaccinated, among all the unvaccinated age groups, the most common barrier is desired brands not available. Thus, we propose evenly distribute vaccine supplies between different brands to provide diverse options for potential vaccine recipients.
 
-Nonetheless, this demonstrates the value of Delphi's [COVID Symptom
-Surveys](https://delphi.cmu.edu/covidcast/surveys/) for studying public
-attitudes and behavior during the pandemic. In partnership with Facebook, who
-help us distribute the surveys, and the University of Maryland, who run [an
-international version](https://covidmap.umd.edu/) in 56 languages worldwide, we
-have been able to track the pandemic and its effects on society for over a year
-now. And much of our data is easily accessible to researchers, through
-aggregates in the [Delphi COVIDcast Epidata
-API](https://cmu-delphi.github.io/delphi-epidata/api/covidcast-signals/fb-survey.html)
-and [tables available for
-download](https://cmu-delphi.github.io/delphi-epidata/symptom-survey/contingency-tables.html),
-and as de-identified individual responses for [researchers who sign Data Use
-Agreements](https://cmu-delphi.github.io/delphi-epidata/symptom-survey/data-access.html).
-With so many responses daily, we can react quickly and spot local changes. If
-you're conducting COVID-related research, we encourage you to explore the data
-and see how it can help you.
 
 
 

@@ -412,14 +412,6 @@ jan_v15b_input <- survey1 %>% filter(V1==2 & !is.na(V15b) & V15b!=11) %>%
 ```
 
 
-On May 10th, 2021,the Centers for Disease Control and Prevention (CDC) and 
-the Food and Drug Administration
-[expanded the emergency use authorization (EUA) for the Pfizer-BioNTech COVID-19 Vaccine](https://www.fda.gov/news-events/press-announcements/coronavirus-covid-19-update-fda-authorizes-pfizer-biontech-covid-19-vaccine-emergency-use) to include adolescents 12 through 15 
-years of age, amending the EUA originally issued on Dec. 11, 2020 for 
-administration in individuals 16 years of age and older. This declared the 
-universal acceptance for vaccination, and another significant step to return to 
-normality.
-
 Since the vaccines first were authorized in December 2020 to healthcare workers, we’ve been trying to vaccinate everyone who is eligible in the US. Early on, vaccines were only available to certain groups; 2 months later, Covid-19 vaccines became generally available across the US, and by May, President Biden announced that they were widely available and everyone should get them.
 
 However, despite all that, many people were still not vaccinated by May, and vaccine uptake has not been as high as initially hoped. And that’s why, through its COVID-19 Trends and Impact Survey, the Delphi Group started to track COVID vaccination barriers to help understand the vaccination barriers by vaccination status and age groups.

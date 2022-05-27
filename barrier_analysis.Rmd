@@ -724,7 +724,7 @@ gt(table_jan) %>%
   ) %>%
   tab_header(
     title = md("**Common barriers to vaccination**"),
-    subtitle = md("Jan, 2021*")
+    subtitle = md("Jan, 2022*")
   ) %>%
     tab_footnote(paste0("Unvaccinated sample size of all, n = ", 
                         prettyNum(samplesize_unv1_use, big.mark = ",")),
